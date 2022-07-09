@@ -1,0 +1,4 @@
+* Disable -fno-rtti and -fno-exceptions used by default with node-gyp
+* Use -std=c++17
+
+* Hard-code include paths? (Maybe ask users to adapt common.gypi)
