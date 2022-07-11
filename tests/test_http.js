@@ -21,10 +21,9 @@ describe('Smoke test spicy using http.hlto', function() {
   it('throws for invalid parsers', function() {
     expect(() => spicy.lookupParser('Unknown::Parser')).toThrow('no such parser')
   });
-
 });
 
-describe('Smoke test parsing using HTTP::Request', function() {
+describe('Smoke test spicy.processInput using HTTP::Request', function() {
   beforeEach(function() {
     parser = spicy.lookupParser('HTTP::Request');
     decoder = new TextDecoder();
@@ -37,5 +36,18 @@ describe('Smoke test parsing using HTTP::Request', function() {
     expect(method).toBe('GET');
     const uri = decoder.decode(r.value.request.value.uri.value);
     expect(uri).toBe('/test.html');
+  });
+
+  it('throws on non-parser objects', function() {
+    expect(() => {
+      spicy.processInput({}, 'GET / HTTP/1.1\r\nHost: test.com\r\n\r\n')
+    }).toThrowError(TypeError, 'not a spicy parser');
+  });
+
+  it('throws on invalid input', function() {
+    expect(() => {
+      spicy.processInput(parser, 'GET\r\n\r\n')
+    // This is a spicy produced message:
+    }).toThrowError(/failed to match regular expression.*http\.spicy/);
   });
 });

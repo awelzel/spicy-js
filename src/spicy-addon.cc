@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unordered_map>
+#include <vector>
 
 
 #include <hilti/rt/libhilti.h>
@@ -19,8 +20,6 @@
 // clang-format !!!
 //
 
-
-#define dprintf(...) do { fprintf (stderr, __VA_ARGS__); fprintf(stderr, "\n"); } while (0)
 
 namespace spicy::nodejs {
 
@@ -241,7 +240,7 @@ napi_value hilti_to_napi(napi_env env, const hilti::rt::type_info::Value& v, nap
 			NAPI_CALL(env, napi_set_property(env, *result, napi_s(env, "id"), napi_s(env, spicy_id)));
 	} else {
 		std::string err = std::string("Not implemented: ") + spicy_id + " " + type.display + " " + " " + std::to_string(type.tag);
-		dprintf("hilti_to_napi failed: %s", err.c_str());
+		std::cerr << "ERROR hilti_to_napi failed: " << err.c_str() << std::endl;
 		NAPI_CALL(env, napi_get_null(env, result));
 	}
 	return nullptr;
@@ -261,7 +260,7 @@ static napi_value ProcessInput(napi_env env, napi_callback_info cbinfo) {
 	NAPI_CALL(env, napi_check_object_type_tag(env, argv[0], &SpicyJsParserTag, &is_spicy_parser));
 
 	if (!is_spicy_parser) {
-		napi_throw_type_error(env, "NoParser", "Not a spicy parser");
+		napi_throw_type_error(env, "InvalidValue", "not a spicy parser");
 		return nullptr;
 	}
 
@@ -272,11 +271,14 @@ static napi_value ProcessInput(napi_env env, napi_callback_info cbinfo) {
 	size_t data_len;
 	NAPI_CALL(env, napi_get_value_string_utf8(env, argv[1], nullptr, 0, &data_len));
 
-	char *data = new char[data_len + 1];  // Add the NULL byte that get_value_string_utf8 wants.
-	NAPI_CALL(env, napi_get_value_string_utf8(env, argv[1], data, data_len + 1, nullptr));
+	std::vector<char> data;
+	data.reserve(data_len + 1);
+
+	// char *data = new char[data_len + 1];  // Add the NULL byte that get_value_string_utf8 wants.
+	NAPI_CALL(env, napi_get_value_string_utf8(env, argv[1], data.data(), data_len + 1, nullptr));
 
 	// Treat as a binary string
-	std::istringstream is(std::string(data, data_len));
+	std::istringstream is(std::string(data.data(), data_len));
 
 	hilti::rt::Result<spicy::rt::ParsedUnit> result;
 	try {
@@ -287,11 +289,10 @@ static napi_value ProcessInput(napi_env env, napi_callback_info cbinfo) {
 			napi_throw_error(env, "ParseError", result.error().description().c_str());
 		}
 	} catch (spicy::rt::ParseError &err) {
-			std::cerr << "Caught error" << std::endl;
+			std::cerr << "Caught error " << err.what() << std::endl;
 			napi_throw_error(env, "ParseError", err.what());
+			return nullptr;
 	}
-
-	delete[] data;
 
 	napi_value nresult;
 	hilti_to_napi(env, (*result).value(), &nresult);
