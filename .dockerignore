@@ -1,0 +1,6 @@
+**/*.hlto
+**/*.swo
+**/*.swp
+**/node_modules
+build
+docker

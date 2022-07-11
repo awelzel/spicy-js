@@ -1,5 +1,12 @@
 {
+  "name": "spicy-js",
+  "version": "0.1.0",
+  "main": "spicy-js/spicy.js",
   "dependencies": {
+    "bindings": "^1.5.0",
     "node-gyp": "^9.0.0"
+  },
+  "devDependencies": {
+    "jasmine": "^4.2.1"
   }
 }
